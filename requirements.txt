@@ -1,0 +1,8 @@
+numpy
+scipy
+pillow
+scikit-image
+matplotlib
+opencv-python
+moviepy
+progressbar2

@@ -1,0 +1,18 @@
+# ignore all logs
+*.log
+
+# Python binaries
+**/__pycache__/
+*.py[cod]
+
+# IPython checkpoints
+**/.ipynb_checkpoints
+
+# VS code files
+**/.vscode/
+
+# Pycharm files
+**/.idea/
+
+# Local test py file
+test.py
