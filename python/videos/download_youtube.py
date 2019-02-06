@@ -6,4 +6,4 @@ for lis in yt.streams.all():
     print(lis)
 
 tag = input('>> Prease enter itag :')
-yt.streams.get_by_itag(int(tag)).download(r'/home/gb/Videos/')
+yt.streams.get_by_itag(int(tag)).download('./')

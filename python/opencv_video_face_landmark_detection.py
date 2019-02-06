@@ -40,11 +40,11 @@ import sys
 import dlib
 import cv2
 import numpy as np
-#import progressbar
+import progressbar
 
 predictor_path = '../weights/shape_predictor_68_face_landmarks.dat'
-video_input = './videos/DakotaJohnson.mp4'
-video_output = './videos/DakotaJohnson_facedet.mp4'
+video_input = './videos/Expression-Brow-Down.mp4'
+video_output = './videos/Expression-Brow-Down_facedet.mp4'
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(predictor_path)
@@ -60,7 +60,7 @@ print(' Frame size : {}'.format(frame.shape))
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-vidout = cv2.VideoWriter(video_output,fourcc, 60.0, (frame.shape[1],frame.shape[0]))
+vidout = cv2.VideoWriter(video_output,fourcc, int(fps), (frame.shape[1],frame.shape[0]))
 
 def rgb_to_gray(src):
      dist = src.copy()
@@ -102,43 +102,46 @@ def crosshairs(image,x_left,x_right,y_top,y_bottom):
 
 def draw_result(image, det, shape):
     image = crosshairs(image,det.left(),det.right(), det.top(),det.bottom())
-    color = (0,255,0)
+    color = (255,255,255)
     for i in range(shape.num_parts):
         #image[shape.part(i).y, shape.part(i).x] = (0,255,0)
         #if(i != 0) and (i != 17) and (i != 22) and (i != 27) and (i != 31) and (i != 36) and (i != 42) and (i != 48) and (i != 60) and (i != 68):
             #cv2.line(image,
             #        (shape.part(i-1).x, shape.part(i-1).y),
             #        (shape.part(i).x, shape.part(i).y),color,1)
-        cv2.circle(image, (shape.part(i).x, shape.part(i).y), 1, color, 1)
+        cv2.circle(image, (shape.part(i).x, shape.part(i).y), 1, color, -1)
 
     return image
 
+with progressbar.ProgressBar(maxval=frames) as bar:
+    n = 0
+    while(vidin.isOpened()):
+        ret, frame = vidin.read()
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        dets = detector(rgb_image, 1)
 
-#with progressbar.ProgressBar(maxval=frames) as bar:
-n = 0
-while(vidin.isOpened()):
-    ret, frame = vidin.read()
-    rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    dets = detector(rgb_image, 1)
-    bgr_frame = rgb_to_gray(rgb_image)
+        # Start timer
+        timer = cv2.getTickCount()
 
-    for det in dets:
-        bgr_frame[det.top():det.bottom(),det.left():det.right(),:] = frame[det.top():det.bottom(),det.left():det.right(),:]
-        shape = predictor(rgb_image, det)
-        bgr_frame = draw_result(bgr_frame, det, shape)
-        break
+        for det in dets:
+            shape = predictor(rgb_image, det)
+            frame = draw_result(frame, det, shape)
+            break
 
-    #cv2.imshow('frame',bgr_frame)
-    # write the flipped frame
-    vidout.write(bgr_frame)
-    n = n + 1
-    print('\r{:d}/{:d}'.format(n,int(frames)), end="")
-    #bar.update(n)
+        # Calculate Frames per second (FPS)
+        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
+        cv2.putText(frame, "FPS : " + str(int(fps)), (10,20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
 
-    #cv2.namedWindow('image')
-    #cv2.imshow('image',bgr_frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        # write the frame
+        vidout.write(frame)
+        n = n + 1
+        #print('\r{:d}/{:d}'.format(n,int(frames)), end="")
+        bar.update(n)
+
+        #cv2.namedWindow('image')
+        #cv2.imshow('image',frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 # Release everything if job is finished
 vidin.release()
