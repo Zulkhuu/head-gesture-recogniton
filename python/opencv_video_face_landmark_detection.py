@@ -40,9 +40,9 @@ import sys
 import dlib
 import cv2
 import numpy as np
-#import progressbar
+import progressbar
 
-predictor_path = '../weights/shape_predictor_68_face_landmarks.dat'
+predictor_path = '../lib/dlib-models/shape_predictor_68_face_landmarks.dat'
 video_input = './videos/DakotaJohnson.mp4'
 video_output = './videos/DakotaJohnson_facedet.mp4'
 
@@ -114,31 +114,29 @@ def draw_result(image, det, shape):
     return image
 
 
-#with progressbar.ProgressBar(maxval=frames) as bar:
-n = 0
-while(vidin.isOpened()):
-    ret, frame = vidin.read()
-    rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    dets = detector(rgb_image, 1)
-    bgr_frame = rgb_to_gray(rgb_image)
+with progressbar.ProgressBar(maxval=frames) as bar:
+    n = 0
+    while(vidin.isOpened()):
+        ret, frame = vidin.read()
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        dets = detector(rgb_image, 1)
+        bgr_frame = rgb_to_gray(rgb_image)
 
-    for det in dets:
-        bgr_frame[det.top():det.bottom(),det.left():det.right(),:] = frame[det.top():det.bottom(),det.left():det.right(),:]
-        shape = predictor(rgb_image, det)
-        bgr_frame = draw_result(bgr_frame, det, shape)
-        break
+        for det in dets:
+            bgr_frame[det.top():det.bottom(),det.left():det.right(),:] = frame[det.top():det.bottom(),det.left():det.right(),:]
+            shape = predictor(rgb_image, det)
+            bgr_frame = draw_result(bgr_frame, det, shape)
+            break
 
-    #cv2.imshow('frame',bgr_frame)
-    # write the flipped frame
-    vidout.write(bgr_frame)
-    n = n + 1
-    print('\r{:d}/{:d}'.format(n,int(frames)), end="")
-    #bar.update(n)
+        # write the flipped frame
+        vidout.write(bgr_frame)
+        n += 1
+        #print('\r{:d}/{:d}'.format(n,int(frames)), end="")
+        bar.update(n)
 
-    #cv2.namedWindow('image')
-    #cv2.imshow('image',bgr_frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        #cv2.imshow('image',bgr_frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 # Release everything if job is finished
 vidin.release()
