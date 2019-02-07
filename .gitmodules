@@ -1,3 +1,6 @@
 [submodule "lib/dlib"]
 	path = lib/dlib
 	url = https://github.com/davisking/dlib
+[submodule "lib/dlib-models"]
+	path = lib/dlib-models
+	url = https://github.com/davisking/dlib-models.git
