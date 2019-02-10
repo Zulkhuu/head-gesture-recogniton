@@ -6,3 +6,5 @@ matplotlib
 opencv-python
 moviepy
 progressbar2
+pandas
+face_alignment
