@@ -9,16 +9,16 @@ import face_alignment
 import numpy as np
 
 #predictor_path = '../weights/shape_predictor_68_face_landmarks.dat'
-video_input = './videos/2.yes_motion_resize.mp4'
+video_input = './videos/1.no_motion_resize.mp4'
 #video_input = './videos/Expression-Brow-Down.mp4'
-video_output = './videos/2.yes_motion_resize_facedet.mp4'
+video_output = './videos/1.no_motion_resize_facedet.mp4'
 
 # Run the 3D face alignment on a test image, without CUDA.
 # https://github.com/1adrianb/face-alignment
 # pip install face-alignment
 
 #fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda:0', flip_input=True)
-fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cpu', flip_input=True, face_detector='dlib')
+fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda:0', flip_input=True, face_detector='dlib')
 
 #
 vidin = cv2.VideoCapture(video_input)
@@ -31,8 +31,9 @@ print(' {} total frames'.format(frames))
 print(' Frame size : {}'.format(frame.shape))
 
 # Define the codec and create VideoWriter object
+FPS_DIV=1
 fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-vidout = cv2.VideoWriter(video_output,fourcc, fps/5, (frame.shape[1]*3,frame.shape[0]))
+vidout = cv2.VideoWriter(video_output,fourcc, fps/FPS_DIV, (frame.shape[1]*3,frame.shape[0]))
 
 def rgb_to_gray(src):
      dist = src.copy()
@@ -115,7 +116,7 @@ with progressbar.ProgressBar(maxval=frames) as bar:
         rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
         bgr_frame = rgb_to_gray(frame)
 
-        if n % 5 != 0:
+        if n % FPS_DIV != 0:
             continue
 
         full_frame = np.zeros(size, dtype=np.uint8)

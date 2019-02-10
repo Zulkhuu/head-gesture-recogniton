@@ -17,39 +17,25 @@
 #   your own object detectors then read the train_object_detector.py example
 #   program.
 #
-#
-# COMPILING/INSTALLING THE DLIB PYTHON INTERFACE
-#   You can install dlib using the command:
-#       pip install dlib
-#
-#   Alternatively, if you want to compile dlib yourself then go into the dlib
-#   root folder and run:
-#       python setup.py install
-#
-#   Compiling dlib should work on any operating system so long as you have
-#   CMake installed.  On Ubuntu, this can be done easily by running the
-#   command:
-#       sudo apt-get install cmake
-#
-#   Also note that this example requires Numpy which can be installed
-#   via the command:
-#       pip install numpy
-#       pip install progressbar2
 
 import sys
 import dlib
 import cv2
-import numpy as np
+import itertools
 import progressbar
+import numpy as np
+import pandas as pd
 
 predictor_path = '../lib/dlib-models/shape_predictor_5_face_landmarks.dat'
 predictor = dlib.shape_predictor(predictor_path)
 detector = dlib.get_frontal_face_detector()
 
-vidin = cv2.VideoCapture('./videos/Expression-Eye-Squint.mp4')
+filename = '2.yes_motion_resize'
+vidin = cv2.VideoCapture('./videos/{:s}.mp4'.format(filename))
 ret,frame = vidin.read()
 fps = vidin.get(cv2.CAP_PROP_FPS)
 frames = vidin.get(cv2.CAP_PROP_FRAME_COUNT)
+results = []
 
 print(' Video FPS rate is {}'.format(fps))
 print(' {} total frames'.format(frames))
@@ -57,7 +43,7 @@ print(' Frame size : {}'.format(frame.shape))
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-vidout = cv2.VideoWriter('./videos/Expression-Eye-Squint-track-5landmarks.mp4',fourcc, 60.0, (frame.shape[1],frame.shape[0]))
+vidout = cv2.VideoWriter('./videos/{:s}-track-5landmarks.mp4'.format(filename),fourcc, 60.0, (frame.shape[1],frame.shape[0]))
 
 def rgb_to_gray(src):
      dist = src.copy()
@@ -110,6 +96,8 @@ with progressbar.ProgressBar(max_value=frames) as bar:
     tracker = cv2.TrackerKCF_create()
     while(vidin.isOpened()):
         ret, frame = vidin.read()
+        if frame is None:
+            break;
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # Start timer
@@ -122,6 +110,10 @@ with progressbar.ProgressBar(max_value=frames) as bar:
                 bbox = (det.left(),det.top(),det.right()-det.left(),det.bottom()-det.top())
                 shape = predictor(rgb_image, det)
                 bgr_frame = draw_landmarks(bgr_frame, det, shape)
+                parts = [[shape.part(i).x, shape.part(i).y] for i in range(shape.num_parts)]
+                pts = list(itertools.chain(*parts))
+                results.append([n, pts])
+                print(results)
                 is_tracking = tracker.init(frame, bbox)
                 if is_tracking:
                     cv2.putText(frame, "Tracker init : ok", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
@@ -138,7 +130,9 @@ with progressbar.ProgressBar(max_value=frames) as bar:
                 det = dlib.rectangle(int(bbox[0]),int(bbox[1]),int(bbox[0]+bbox[2]),int(bbox[1]+bbox[3]))
                 shape = predictor(rgb_image, det)
                 frame = draw_landmarks(frame, det, shape)
-
+                parts = [[shape.part(i).x, shape.part(i).y] for i in range(shape.num_parts)]
+                pts = list(itertools.chain(*parts))
+                results.append([n, pts])
                 cv2.putText(frame, "Tracking : ok", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
             else:
                 tracker.clear()
@@ -163,6 +157,10 @@ with progressbar.ProgressBar(max_value=frames) as bar:
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+# Save score
+df = pd.DataFrame(results,columns=['frame#','pts'])
+df.to_csv('./csv/{:s}.csv'.format(filename)),
 
 # Release everything if job is finished
 vidin.release()
