@@ -135,9 +135,13 @@ with progressbar.ProgressBar(maxval=frames) as bar:
         if points:
             # Calculate elapsed time
             elapsed_time = time.time() - start_time
-            cv2.putText(full_frame, "Execution : {:.1f} [ms]".format(1000*elapsed_time), (470,20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-            cv2.putText(full_frame, "Nod   : {:.1f}".format(0), (470,40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-            cv2.putText(full_frame, "Shake : {:.1f}".format(0), (470,60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
+
+            cv2.putText(full_frame, "Video FPS rate is {}".format(fps),                        (480,20),  cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,125,0), 1, cv2.LINE_AA);
+            cv2.putText(full_frame, "{:d} total frames".format(int(frames)),                   (480,40),  cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,125,0), 1, cv2.LINE_AA);
+            cv2.putText(full_frame, "Frame size : {}".format(frame.shape),                     (480,60),  cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,125,0), 1, cv2.LINE_AA);
+            cv2.putText(full_frame, "Execution  : {:04d} [ms]".format(int(1000*elapsed_time)), (480,80),  cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,125,0), 1, cv2.LINE_AA);
+            cv2.putText(full_frame, "Nod   : {:01d}".format(0),                                (480,100), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,125,0), 1, cv2.LINE_AA);
+            cv2.putText(full_frame, "Shake : {:01d}".format(0),                                (480,120), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,125,0), 1, cv2.LINE_AA);
             #
             points = points[-1]/resize_scale
             x_left   = int(np.min(points[:,0]-12))
