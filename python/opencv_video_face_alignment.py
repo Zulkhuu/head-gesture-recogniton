@@ -1,17 +1,17 @@
 import sys
 import dlib
 import cv2
-print(cv2.__version__)
 import progressbar
 import time
 
 import face_alignment
 import numpy as np
+import pandas as pd
 
 #predictor_path = '../weights/shape_predictor_68_face_landmarks.dat'
-video_input = './videos/1.no_motion_resize.mp4'
-#video_input = './videos/Expression-Brow-Down.mp4'
-video_output = './videos/1.no_motion_resize_facedet.mp4'
+filename = '1.no_motion_resize'
+video_input = './videos/{:s}.mp4'.format(filename)
+video_output = './videos/{:s}_facedet.mp4'.format(filename)
 
 # Run the 3D face alignment on a test image, without CUDA.
 # https://github.com/1adrianb/face-alignment
@@ -25,6 +25,7 @@ vidin = cv2.VideoCapture(video_input)
 ret,frame = vidin.read()
 fps = vidin.get(cv2.CAP_PROP_FPS)
 frames = vidin.get(cv2.CAP_PROP_FRAME_COUNT)
+results = []
 
 print(' Video FPS rate is {}'.format(fps))
 print(' {} total frames'.format(frames))
@@ -112,6 +113,8 @@ with progressbar.ProgressBar(maxval=frames) as bar:
     while(vidin.isOpened()):
         n = n + 1
         ret, frame = vidin.read()
+        if frame is None:
+            break;
         bgr_image = cv2.resize(frame,None,fx=resize_scale,fy=resize_scale)
         rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
         bgr_frame = rgb_to_gray(frame)
@@ -161,8 +164,10 @@ with progressbar.ProgressBar(maxval=frames) as bar:
             full_frame = draw_result(full_frame, p)
             #
             k = 0
+            results.append([n, points])
             cv2.putText(full_frame, "  id     x       y       z     ",(frame.shape[1]*2+90,100+15*k), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (50,50,50), 1, cv2.LINE_AA);
             for x,y,z in points[0:34,:]:
+                #results.append([n, k, x, y, z])
                 k = k + 1
                 cv2.putText(full_frame, "{:03d}  {:5.1f}   {:5.1f}   {:5.1f}".format(k,x,y,z), (frame.shape[1]*2+90,100+15*k), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (50,50,50), 1, cv2.LINE_AA);
             cv2.putText(full_frame, "  id     x       y       z     ",(frame.shape[1]*2+280,100+15*(k-34)), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (50,50,50), 1, cv2.LINE_AA);
@@ -181,6 +186,10 @@ with progressbar.ProgressBar(maxval=frames) as bar:
         cv2.imshow('image',full_frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+# Save score
+df = pd.DataFrame(results,columns=['frame#','pts'])
+df.to_csv('./csv/{:s}_alignment.csv'.format(filename))
 
 # Release everything if job is finished
 vidin.release()

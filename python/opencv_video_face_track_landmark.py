@@ -30,7 +30,7 @@ predictor_path = '../lib/dlib-models/shape_predictor_5_face_landmarks.dat'
 predictor = dlib.shape_predictor(predictor_path)
 detector = dlib.get_frontal_face_detector()
 
-filename = '2.yes_motion_resize'
+filename = '1.no_motion_resize'
 vidin = cv2.VideoCapture('./videos/{:s}.mp4'.format(filename))
 ret,frame = vidin.read()
 fps = vidin.get(cv2.CAP_PROP_FPS)
@@ -160,7 +160,7 @@ with progressbar.ProgressBar(max_value=frames) as bar:
 
 # Save score
 df = pd.DataFrame(results,columns=['frame#','pts'])
-df.to_csv('./csv/{:s}.csv'.format(filename)),
+df.to_csv('./csv/{:s}_5landmarks.csv'.format(filename))
 
 # Release everything if job is finished
 vidin.release()
