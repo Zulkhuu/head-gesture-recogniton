@@ -40,16 +40,23 @@ import sys
 import dlib
 import cv2
 import numpy as np
+import pandas as pd
+import itertools
 import progressbar
 
-predictor_path = '../lib/dlib-models/shape_predictor_5_face_landmarks.dat'
-predictor = dlib.shape_predictor(predictor_path)
-detector = dlib.get_frontal_face_detector()
+filename = '2.yes_motion_resize'
+predictor_path = '../lib/dlib-models/shape_predictor_68_face_landmarks.dat'
+video_input = './videos/{:s}.mp4'.format(filename)
+video_output = './videos/result/{:s}_68landmarks.mp4'.format(filename)
 
-vidin = cv2.VideoCapture('./videos/DakotaJohnson.mp4')
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(predictor_path)
+
+vidin = cv2.VideoCapture(video_input)
 ret,frame = vidin.read()
 fps = vidin.get(cv2.CAP_PROP_FPS)
 frames = vidin.get(cv2.CAP_PROP_FRAME_COUNT)
+results = []
 
 print(' Video FPS rate is {}'.format(fps))
 print(' {} total frames'.format(frames))
@@ -57,7 +64,7 @@ print(' Frame size : {}'.format(frame.shape))
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-vidout = cv2.VideoWriter('./videos/DakotaJohnson_facedet.mp4',fourcc, 60.0, (frame.shape[1],frame.shape[0]))
+vidout = cv2.VideoWriter(video_output,fourcc, fps, (frame.shape[1],frame.shape[0]))
 
 def rgb_to_gray(src):
      dist = src.copy()
@@ -97,59 +104,52 @@ def crosshairs(image,x_left,x_right,y_top,y_bottom):
     #
     return image
 
-with progressbar.ProgressBar(max_value=frames) as bar:
+def draw_result(image, det, shape):
+    image = crosshairs(image,det.left(),det.right(), det.top(),det.bottom())
+    color = (0,255,0)
+    for i in range(shape.num_parts):
+        #image[shape.part(i).y, shape.part(i).x] = (0,255,0)
+        #if(i != 0) and (i != 17) and (i != 22) and (i != 27) and (i != 31) and (i != 36) and (i != 42) and (i != 48) and (i != 60) and (i != 68):
+            #cv2.line(image,
+            #        (shape.part(i-1).x, shape.part(i-1).y),
+            #        (shape.part(i).x, shape.part(i).y),color,1)
+        cv2.circle(image, (shape.part(i).x, shape.part(i).y), 2, color, 2)
+
+    return image
+
+
+with progressbar.ProgressBar(maxval=frames) as bar:
     n = 0
-    is_tracking = False
-    tracker = cv2.TrackerKCF_create()
     while(vidin.isOpened()):
         ret, frame = vidin.read()
+        if frame is None:
+            break;
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        dets = detector(rgb_image, 1)
+        bgr_frame = rgb_to_gray(rgb_image)
 
-        # Start timer
-        timer = cv2.getTickCount()
+        for det in dets:
+            bgr_frame[det.top():det.bottom(),det.left():det.right(),:] = frame[det.top():det.bottom(),det.left():det.right(),:]
+            shape = predictor(rgb_image, det)
+            bgr_frame = draw_result(bgr_frame, det, shape)
+            parts = [[shape.part(i).x, shape.part(i).y] for i in range(shape.num_parts)]
+            pts = list(itertools.chain(*parts))
+            results.append([n, pts])
+            break
 
-        if not is_tracking:
-            dets = detector(rgb_image)
-            for det in dets:
-                bgr_frame = crosshairs(frame,det.left(),det.right(), det.top(),det.bottom())
-                bbox = (det.left(),det.top(),det.right()-det.left(),det.bottom()-det.top())
-                is_tracking = tracker.init(frame, bbox)
-                if is_tracking:
-                    cv2.putText(frame, "Tracker init : ok", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-                else:
-                    cv2.putText(frame, "Tracker init : failure", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-                #print('is_tracking:{}'.format(is_tracking))
-                break
-        else:
-            # Update tracker
-            track, bbox = tracker.update(frame)
-            if track:
-                # Tracking success
-                frame = crosshairs(frame,int(bbox[0]),int(bbox[0]+bbox[2]),int(bbox[1]),int(bbox[1]+bbox[3]))
-                cv2.putText(frame, "Tracking : ok", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-            else:
-                tracker.clear()
-                tracker = cv2.TrackerKCF_create()
-                is_tracking = False
-                cv2.putText(frame, "Tracking : lost", (10,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-
-        # Calculate Frames per second (FPS)
-        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
-        cv2.putText(frame, "FPS : " + str(int(fps)), (10,20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA);
-
-        #for det in dets:
-        #    bgr_frame[det.top():det.bottom(),det.left():det.right(),:] = frame[det.top():det.bottom(),det.left():det.right(),:]
-        #    bgr_frame = crosshairs(bgr_frame,det.left(),det.right(), det.top(),det.bottom())
-        #    break
-
-        cv2.imshow('frame',frame)
         # write the flipped frame
-        vidout.write(frame)
-        n = n + 1
+        vidout.write(bgr_frame)
+        n += 1
+        #print('\r{:d}/{:d}'.format(n,int(frames)), end="")
         bar.update(n)
 
+        #cv2.imshow('image',bgr_frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+# Save score
+df = pd.DataFrame(results,columns=['frame#','pts'])
+df.to_csv('./csv/{:s}_68landmarks.csv'.format(filename))
 
 # Release everything if job is finished
 vidin.release()

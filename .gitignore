@@ -16,3 +16,6 @@
 
 # Local test py file
 test.py
+
+# Output video file
+python/videos/result/
