@@ -7,4 +7,7 @@ opencv-python
 moviepy
 progressbar2
 pandas
+dlib
 face_alignment
+tensorflow
+mtcnn
