@@ -1,70 +1,41 @@
-#!/usr/bin/python
-# The contents of this file are in the public domain. See LICENSE_FOR_EXAMPLE_PROGRAMS.txt
-#
-#   This example program shows how to find frontal human faces in a webcam stream using OpenCV.
-#   It is also meant to demonstrate that rgb images from Dlib can be used with opencv by just
-#   swapping the Red and Blue channels.
-#
-#   You can run this program and see the detections from your webcam by executing the
-#   following command:
-#       ./opencv_face_detection.py
-#
-#   This face detector is made using the now classic Histogram of Oriented
-#   Gradients (HOG) feature combined with a linear classifier, an image
-#   pyramid, and sliding window detection scheme.  This type of object detector
-#   is fairly general and capable of detecting many types of semi-rigid objects
-#   in addition to human faces.  Therefore, if you are interested in making
-#   your own object detectors then read the train_object_detector.py example
-#   program.
-#
-#
-# COMPILING/INSTALLING THE DLIB PYTHON INTERFACE
-#   You can install dlib using the command:
-#       pip install dlib
-#
-#   Alternatively, if you want to compile dlib yourself then go into the dlib
-#   root folder and run:
-#       python setup.py install
-#
-#   Compiling dlib should work on any operating system so long as you have
-#   CMake installed.  On Ubuntu, this can be done easily by running the
-#   command:
-#       sudo apt-get install cmake
-#
 #   Also note that this example requires Numpy which can be installed
 #   via the command:
 #       pip install numpy
 #       pip install progressbar2
 
 import sys, os
-#sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import cv2
 import numpy as np
 import pandas as pd
 import itertools
 import progressbar
 import time
+
 from mtcnn.mtcnn import MTCNN
 
-program_name = 'mtcnn_face_alignment'
+import_path = '../videos'
+export_path = '../videos/result/'
+
+program_name = 'mtcnn_pytorch_face_alignment'
 input_filename = '1.no_motion_resize'
-output_filename = '{:s}_{:s}'.format(input_filename, program_name)
 
-video_input = './videos/{:s}.mp4'.format(input_filename)
-video_output = './videos/result/{:s}.mp4'.format(output_filename)
-if not os.path.exists('./videos/result/'):
-    os.makedirs('./videos/result/')
-if not os.path.exists('./csv/'):
-    os.makedirs('./csv/')
+video_input = '{:s}/{:s}.mp4'.format(import_path,input_filename)
+video_output = '{:s}/{:s}_{:s}.mp4'.format(export_path,input_filename,program_name)
 
+if not os.path.exists(export_path):
+    os.makedirs(export_path)
+
+# Detector
 detector = MTCNN()
+
+# Video input
 vidin = cv2.VideoCapture(video_input)
 ret,frame = vidin.read()
 fps = vidin.get(cv2.CAP_PROP_FPS)
 frames = vidin.get(cv2.CAP_PROP_FRAME_COUNT)
 results = {}
 
-print(' Video FPS rate is {}'.format(fps))
+print(' Video fps rate is {}'.format(fps))
 print(' {} total frames'.format(frames))
 print(' Frame size : {}'.format(frame.shape))
 
@@ -118,9 +89,7 @@ def draw_result(image, det):
     color = (0,255,0)
     for key, pt in pts.items():
         cv2.circle(image, (pt[0], pt[1]), 2, color, 2)
-
     return image
-
 
 with progressbar.ProgressBar(maxval=frames) as bar:
     n = 0
@@ -134,11 +103,10 @@ with progressbar.ProgressBar(maxval=frames) as bar:
             start_time = time.time()
 
             dets = detector.detect_faces(rgb_image)
-
             for det in dets:
                 bgr_frame = draw_result(bgr_frame, det)
-                results[n] = det
-                break
+                #results[n] = det
+                #break
 
             # Calculate elapsed time
             elapsed_time = time.time() - start_time
@@ -162,8 +130,8 @@ with progressbar.ProgressBar(maxval=frames) as bar:
             break
 
 # Save score
-df = pd.DataFrame.from_dict(results, orient='index')
-df.to_csv('./csv/{:s}.csv'.format(output_filename))
+#df = pd.DataFrame.from_dict(results, orient='index')
+#df.to_csv('./csv/{:s}.csv'.format(output_filename))
 
 # Release everything if job is finished
 vidin.release()
