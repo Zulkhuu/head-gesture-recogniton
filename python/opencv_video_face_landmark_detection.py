@@ -42,7 +42,7 @@ import cv2
 import numpy as np
 import progressbar
 
-predictor_path = '../lib/dlib-models/shape_predictor_68_face_landmarks.dat'
+#predictor_path = '../lib/dlib-models/shape_predictor_68_face_landmarks.dat'
 video_input = './videos/DakotaJohnson.mp4'
 video_output = './videos/DakotaJohnson_facedet.mp4'
 
