@@ -18,7 +18,8 @@ video_output = './videos/{:s}_facedet.mp4'.format(filename)
 # pip install face-alignment
 
 #fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda:0', flip_input=True)
-fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, device='cuda:0', flip_input=True, face_detector='dlib')
+#network_size=NetworkSize.LARGE
+fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._3D, network_size=4, device='cpu', flip_input=True, face_detector='dlib')
 
 #
 vidin = cv2.VideoCapture(video_input)
