@@ -17,7 +17,7 @@ import_path = '../videos'
 export_path = '../videos/result/'
 
 program_name = 'mtcnn_pytorch_face_alignment'
-input_filename = '1.no_motion_resize'
+input_filename = 'Expression-Brow-Down'
 
 video_input = '{:s}/{:s}.mp4'.format(import_path,input_filename)
 video_output = '{:s}/{:s}_{:s}.mp4'.format(export_path,input_filename,program_name)
